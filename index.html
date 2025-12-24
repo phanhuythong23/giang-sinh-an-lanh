@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merry Christmas - Interactive Experience</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Lily+Script+One&family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary-red: #c0392b; --gold: #f1c40f; --envelope-red: #ff6f61; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: linear-gradient(#00111a, #00334d); font-family: 'Dancing Script', cursive; }
+        
+        /* Tuyết rơi */
+        .snowflake { position: absolute; top: -10px; color: white; user-select: none; animation-name: fall; animation-timing-function: linear; z-index: 100; pointer-events: none; }
+        @keyframes fall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(360deg); opacity: 0.3; } }
+
+        /* Mây và Santa */
+        .clouds { position: absolute; top: 0; width: 100%; height: 30%; pointer-events: none; z-index: 5; }
+        .cloud { position: absolute; width: 150px; opacity: 0.5; animation: moveClouds 20s linear infinite; }
+        @keyframes moveClouds { from { left: -200px; } to { left: 100vw; } }
+
+        .santa-container { position: absolute; top: 15%; left: -300px; width: 250px; z-index: 10; animation: flySanta 15s linear infinite; }
+        .santa { width: 100%; transform: scaleX(-1); }
+        @keyframes flySanta { from { left: -300px; transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-20px); } to { left: 100vw; transform: scaleX(-1) translateY(0); } }
+
+        /* Cấu trúc Page */
+        .page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 20; }
+        #page1 { display: flex; cursor: pointer; }
+
+        /* Page 1 */
+        .pine-tree-img { width: 300px; animation: pop 1s forwards; filter: drop-shadow(0 0 15px #1b5e20); }
+        .star-top { font-size: 50px; color: gold; text-shadow: 0 0 20px gold; animation: blink 1s infinite alternate; }
+        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+        .christmas-title { font-family: 'Mountains of Christmas', serif; color: white; font-size: 4em; text-shadow: 0 0 20px red; margin: 20px 0; z-index: 50; }
+
+        /* Page 2: Căn chỉnh vị trí an toàn */
+        #page2 {
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .envelope {
+            position: relative;
+            width: 400px; 
+            height: 280px; 
+            background: #fff;
+            box-shadow: 0 15px 45px rgba(0,0,0,0.6);
+            cursor: pointer;
+            perspective: 1500px;
+            /* Hạ thấp phong bì xuống một chút để khi thư trồi lên không chạm đỉnh */
+            margin-top: 180px; 
+        }
+        .flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: var(--envelope-red);
+            transform-origin: top;
+            transition: transform 0.8s ease;
+            z-index: 3;
+            border-bottom: 2px solid rgba(0,0,0,0.1);
+        }
+        .envelope-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--envelope-red);
+            z-index: 1;
+        }
+
+        .letter {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            width: 380px;
+            height: 90%;
+            background: #fdf5e6;
+            padding: 30px;
+            box-sizing: border-box;
+            transition: transform 0.8s ease, height 0.8s ease;
+            z-index: 2;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .envelope.open .flap { transform: rotateX(-180deg); z-index: 1; }
+        .envelope.open .letter { 
+            /* Giảm độ cao trồi lên để không đụng thanh search */
+            transform: translateY(-200px); 
+            height: 480px; 
+            z-index: 4; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4); 
+        }
+
+        #typing { 
+            font-family: 'Courier New', monospace; 
+            font-size: 1.1em; /* Giảm nhẹ cỡ chữ để nội dung gọn hơn */
+            color: #333; 
+            line-height: 1.5; 
+            white-space: pre-wrap; 
+            margin-bottom: 15px;
+            width: 100%;
+        }
+        .next-btn { 
+            padding: 10px; 
+            background: var(--primary-red); 
+            color: white; 
+            border: none; 
+            border-radius: 15px; 
+            display: none; 
+            cursor: pointer; 
+            width: 90%; 
+            font-weight: bold; 
+            font-size: 1em;
+            margin-top: 5px;
+        }
+
+        .env-hint {
+            position: absolute;
+            bottom: 10%;
+            color: white;
+            animation: blink 1s infinite;
+            font-size: 1.2em;
+        }
+
+        /* Page 3 */
+        #page3 h1 { font-family: 'Lily Script One', cursive; font-size: 3.5em; color: white; text-shadow: 0 0 20px red; text-align: center; }
+        .music-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: rgba(255,255,255,0.2); border: none; font-size: 25px; padding: 10px; border-radius: 50%; cursor: pointer; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        @media (max-width: 420px) {
+            .envelope { width: 300px; height: 210px; margin-top: 150px; }
+            .letter { width: 280px; }
+            .envelope.open .letter { height: 400px; transform: translateY(-160px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="clouds">
+        <img src="https://firebasestorage.googleapis.com/v0/b/webai-54992.appspot.com/o/cloud.png?alt=media&token=acc83aac-8e9c-4783-8c6f-2a2531257d38" class="cloud" style="top: 20px; left: 10%;" alt="cloud">
+        <img src="https://firebasestorage.googleapis.com/v0/b/webai-54992.appspot.com/o/cloud.png?alt=media&token=acc83aac-8e9c-4783-8c6f-2a2531257d38" class="cloud" style="top: 80px; left: 50%;" alt="cloud">
+    </div>
+
+    <div class="santa-container">
+        <img src="https://firebasestorage.googleapis.com/v0/b/webai-54992.appspot.com/o/santa.png?alt=media&token=a81ad9d6-4f75-498e-9ba4-3e28673c942f" class="santa" alt="Santa">
+    </div>
+
+    <div id="page1" class="page" onclick="showPage2()">
+        <h1 class="christmas-title">Merry Christmas</h1>
+        <div class="star-top">⭐</div>
+        <img src="https://firebasestorage.googleapis.com/v0/b/webai-54992.appspot.com/o/pineTree.png?alt=media&token=2d82b851-6e4e-4518-a7a8-e06126b47e34" class="pine-tree-img" alt="Tree">
+        <p style="color: white; margin-top: 30px; animation: blink 1s infinite;"> Bấm vào đây nè mọi người ơi :v...</p>
+    </div>
+
+    <div id="page2" class="page">
+        <div class="envelope" id="envelope" onclick="openLetter()">
+            <div class="flap"></div>
+            <div class="body envelope-body"></div>
+            <div class="letter">
+                <div id="typing"></div>
+                <button id="btnNext" class="next-btn" onclick="showPage3(event)">Bấm vào đây nữa nè ➔</button>
+            </div>
+        </div>
+        <p id="env-hint" class="env-hint">Mở thư đi ạ 🩷</p>
+    </div>
+
+    <div id="page3" class="page">
+        <h1 onclick="showMessage()" style="cursor: pointer;">Merry Christmas</h1>
+        <p style="color: gold; font-size: 1.5em; text-align: center; padding: 0 20px;">Một Giáng sinh an lành!</p>
+        <button onclick="location.reload()" style="background: none; border: 1px solid white; color: white; padding: 10px; margin-top: 20px; border-radius: 10px; cursor: pointer;">xem lại ở đâyy nè</button>
+    </div>
+
+    <audio id="bgMusic" loop>
+        <source src="https://storage.googleapis.com/webai-54992.appspot.com/WeWishYouAMerryChristmas.mp3" type="audio/mp3">
+    </audio>
+    <button class="music-toggle" onclick="toggleMusic()">🔊</button>
+
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+    <script>
+        const snowCount = 50;
+        for (let i = 0; i < snowCount; i++) {
+            const snowflake = document.createElement("div");
+            snowflake.classList.add("snowflake");
+            snowflake.textContent = "❄";
+            snowflake.style.left = Math.random() * 100 + "vw";
+            snowflake.style.fontSize = Math.random() * 10 + 10 + "px";
+            snowflake.style.animationDuration = Math.random() * 5 + 5 + "s";
+            snowflake.style.animationDelay = Math.random() * 5 + "s";
+            document.body.appendChild(snowflake);
+        }
+
+        const music = document.getElementById('bgMusic');
+        function toggleMusic() {
+            if (music.paused) { music.play(); } else { music.pause(); }
+        }
+
+        function showPage2() {
+            document.getElementById('page1').style.display = 'none';
+            document.getElementById('page2').style.display = 'flex';
+            music.play().catch(() => {});
+        }
+
+        const message = "Xin chào cả nhà mình ,\n\n Hôm nay là Giáng sinh!🎄\nThông chúc mọi có một ngày Giáng sinh thật tuyệt vời với những người thân yêu của mình nhé!.\n\nMerry Christmas ❤️";
+        let charIndex = 0;
+        let isTyping = false;
+
+        function openLetter() {
+            if (isTyping) return;
+            document.getElementById('envelope').classList.add('open');
+            document.getElementById('env-hint').style.display = 'none';
+            isTyping = true;
+            setTimeout(typeEffect, 1000);
+        }
+
+        function typeEffect() {
+            if (charIndex < message.length) {
+                document.getElementById('typing').innerHTML += message.charAt(charIndex);
+                charIndex++;
+                setTimeout(typeEffect, 60);
+            } else {
+                document.getElementById('btnNext').style.display = 'block';
+            }
+        }
+
+        function showPage3(event) {
+            event.stopPropagation();
+            document.getElementById('page2').style.display = 'none';
+            document.getElementById('page3').style.display = 'flex';
+            document.body.style.background = "linear-gradient(#5d0000, #b03a2e)";
+            showMessage();
+        }
+
+        function showMessage() {
+            swal({
+                title: "Đôi lời yêu thương",
+                text: "Con chúc cả nhà một này Giáng sinh vui vẻ!! \nMọi điều tốt đẹp sẽ đến với mọi người trong gia đình. Hãy có một đêm Giáng sinh vui vẻ và hạnh phúc nhé!!! \n Merry Christmas ❤️️❤️️❤️️",
+                button: { text: "~ Lời từ Thông với tất cả những lời yêu thương đến với cả nhà ~" },
+            });
+        }
+    </script>
+</body>
+</html>
